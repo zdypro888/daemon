@@ -74,23 +74,27 @@ func Run(name, description string, dependencies ...string) bool {
 
 //RunWithConsole 运行
 func RunWithConsole(name, description string, dependencies ...string) bool {
+	var flagConsole bool
+	flag.BoolVar(&flagConsole, "console", false, "with console output")
 	if !Run(name, description, dependencies...) {
 		return false
 	}
-	folder, err := osext.ExecutableFolder()
-	if err != nil {
-		log.Printf("get executable folder faild: %v", err)
-		return false
+	if !flagConsole {
+		folder, err := osext.ExecutableFolder()
+		if err != nil {
+			log.Printf("get executable folder faild: %v", err)
+			return false
+		}
+		if gCrashFile, err = crash.InitPanicFile(path.Join(folder, fmt.Sprintf("%s_crash.log", name))); err != nil {
+			log.Printf("open crash file faild: %v", err)
+			return false
+		}
+		if gLogFile, err = os.OpenFile(path.Join(folder, fmt.Sprintf("%s.log", name)), os.O_CREATE|os.O_WRONLY|os.O_TRUNC|os.O_SYNC, 0644); err != nil {
+			log.Printf("open log file faild: %v", err)
+			return false
+		}
+		log.SetOutput(gLogFile)
 	}
-	if gCrashFile, err = crash.InitPanicFile(path.Join(folder, fmt.Sprintf("%s_crash.log", name))); err != nil {
-		log.Printf("open crash file faild: %v", err)
-		return false
-	}
-	if gLogFile, err = os.OpenFile(path.Join(folder, fmt.Sprintf("%s.log", name)), os.O_CREATE|os.O_WRONLY|os.O_TRUNC|os.O_SYNC, 0644); err != nil {
-		log.Printf("open log file faild: %v", err)
-		return false
-	}
-	log.SetOutput(gLogFile)
 	return true
 }
 
