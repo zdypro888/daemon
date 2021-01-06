@@ -1,0 +1,51 @@
+{
+    "version": "2.0.0",
+    "type": "shell",
+    "echoCommand": true,
+    "presentation": {
+        "reveal": "always",
+        "panel": "new"
+    },
+    "tasks": [
+        {
+            "label": "local",
+            "command": "go",
+            "args": [
+                "build",
+                "-gcflags=-trimpath=${fileDirname}",
+                "-asmflags=-trimpath=${fileDirname}",
+                "-ldflags",
+                "-w -s -extldflags \"-w -s\""
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "options": {
+                "cwd": "${fileDirname}"
+            },
+        },
+        {
+            "label": "linux",
+            "command": "go",
+            "args": [
+                "build",
+                "-gcflags=-trimpath=${fileDirname}",
+                "-asmflags=-trimpath=${fileDirname}",
+                "-ldflags",
+                "-w -s -extldflags \"-w -s\""
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "options": {
+                "cwd": "${fileDirname}",
+                "env": {
+                    "GOOS": "linux",
+                    "GOARCH": "amd64"
+                }
+            }
+        }
+    ]
+}

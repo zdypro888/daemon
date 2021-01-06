@@ -1,0 +1,196 @@
+package main
+
+import (
+	"encoding/json"
+	"io/ioutil"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"path"
+	"strings"
+	"syscall"
+	"time"
+
+	"github.com/kardianos/osext"
+	stdaemon "github.com/takama/daemon"
+	zdydaemon "github.com/zdypro888/daemon"
+)
+
+type file struct {
+	URL  string `bson:"url" json:"url"`
+	File string `bson:"file" json:"file"`
+}
+type update struct {
+	Version int64   `bson:"ver" json:"ver"`
+	Files   []*file `bson:"files" json:"files"`
+}
+
+type daemon struct {
+	Name    string `bson:"name" json:"name"`
+	Desc    string `bson:"desc" json:"desc"`
+	URL     string `bson:"url" json:"url"`
+	Version int64  `bson:"ver" json:"ver"`
+}
+type config struct {
+	Daemons []*daemon `bson:"daemons" json:"daemons"`
+}
+
+func (con *config) Save() error {
+	data, err := json.Marshal(con)
+	if err != nil {
+		return err
+	}
+	folder, err := osext.ExecutableFolder()
+	if err != nil {
+		return err
+	}
+	return ioutil.WriteFile(path.Join(folder, "daemons.json"), data, 0644)
+}
+func (con *config) Load() error {
+	folder, err := osext.ExecutableFolder()
+	if err != nil {
+		return err
+	}
+	data, err := ioutil.ReadFile(path.Join(folder, "daemons.json"))
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(data, con)
+}
+
+var defaultConfig = &config{}
+
+func updateDaemon(d *daemon) bool {
+	response, err := http.Get(d.URL)
+	if err != nil {
+		log.Printf("Check daemon(%s) error: %v", d.Name, err)
+		return false
+	}
+	defer response.Body.Close()
+	data, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		log.Printf("Check daemon(%s) error: %v", d.Name, err)
+		return false
+	}
+	u := &update{}
+	if err := json.Unmarshal(data, u); err != nil {
+		log.Printf("Check daemon(%s) error: %v", d.Name, err)
+		return false
+	}
+	if d.Version >= u.Version {
+		log.Printf("Check daemon(%s) no need update", d.Name)
+		return false
+	}
+
+	dm, err := stdaemon.New(d.Name, d.Desc, stdaemon.SystemDaemon)
+	if err != nil {
+		log.Printf("Control daemon(%s) error: %v", d.Name, err)
+		return false
+	}
+	if str, err := dm.Stop(); err != nil {
+		log.Printf("Stop daemon(%s) error(%s): %v", d.Name, str, err)
+	}
+	time.Sleep(5 * time.Second)
+	folder, err := osext.ExecutableFolder()
+	if err != nil {
+		log.Printf("Get executable folder error: %v", err)
+		return false
+	}
+	for _, down := range u.Files {
+		file, err := http.Get(down.URL)
+		if err != nil {
+			log.Printf("Download daemon(%s) error: %v", d.Name, err)
+			return false
+		}
+		defer file.Body.Close()
+		fileData, err := ioutil.ReadAll(file.Body)
+		if err != nil {
+			log.Printf("Download daemon(%s) error: %v", d.Name, err)
+			return false
+		}
+		dFilePath := path.Join(folder, down.File)
+		os.MkdirAll(path.Dir(dFilePath), os.ModePerm)
+		if err := ioutil.WriteFile(dFilePath, fileData, 0755); err != nil {
+			log.Printf("Write daemon(%s) error: %v", d.Name, err)
+			return false
+		}
+	}
+	if str, err := dm.Start(); err != nil {
+		log.Printf("Start daemon(%s) error(%s): %v", d.Name, str, err)
+	}
+	d.Version = u.Version
+	log.Printf("Update daemon(%s) Successful", d.Name)
+	return true
+}
+func keepDaemon(d *daemon) bool {
+	kpd, err := stdaemon.New(d.Name, d.Desc, stdaemon.SystemDaemon)
+	if err != nil {
+		log.Printf("Control daemon(%s) error: %v", d.Name, err)
+		return false
+	}
+	var status string
+	if status, err = kpd.Status(); err != nil {
+		log.Printf("Get daemon(%s) Status error: %v", d.Name, err)
+		return false
+	}
+	if strings.Contains(status, "running") {
+		return true
+	}
+	if status, err = kpd.Start(); err != nil {
+		log.Printf("Start daemon(%s) Status error: %v", d.Name, err)
+		return false
+	}
+	log.Print(status)
+	return true
+}
+func daemonUpdateGo() {
+	for {
+		for _, di := range defaultConfig.Daemons {
+			if di.URL == "" || !updateDaemon(di) {
+				keepDaemon(di)
+			}
+		}
+		time.Sleep(1 * time.Minute)
+	}
+}
+
+const (
+	name        = "updater"
+	description = "auto keep&update daemon service"
+)
+
+var dependencies = []string{}
+
+func main() {
+	if !zdydaemon.RunWithConsole(name, description, dependencies...) {
+		return
+	}
+	if err := defaultConfig.Load(); err != nil {
+		defaultConfig.Daemons = append(defaultConfig.Daemons, &daemon{
+			Name:    "daemon",
+			Desc:    "daemon desc",
+			URL:     "http://update.com/update.json",
+			Version: 20210101,
+		})
+		defaultConfig.Save()
+		u := &update{Version: 20210101, Files: []*file{}}
+		if data, err := json.Marshal(u); err == nil {
+			folder, _ := osext.ExecutableFolder()
+			ioutil.WriteFile(path.Join(folder, "update.json"), data, 0644)
+		}
+		log.Printf("Read config file faild %v", err)
+		return
+	}
+
+	defer defaultConfig.Save()
+	go daemonUpdateGo()
+
+	interrupt := make(chan os.Signal, 1)
+	defer close(interrupt)
+	signal.Notify(interrupt, os.Interrupt, os.Kill, syscall.SIGTERM)
+	killSignal := <-interrupt
+	if killSignal == os.Interrupt {
+		log.Printf("Interruped by system signal")
+	}
+}
