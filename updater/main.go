@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"log"
-	"net/http"
 	"os"
 	"os/signal"
 	"path"
@@ -62,19 +61,13 @@ func (con *config) Load() error {
 var defaultConfig = &config{}
 
 func updateDaemon(d *daemon) bool {
-	response, err := http.Get(d.URL)
-	if err != nil {
-		log.Printf("Check daemon(%s) error: %v", d.Name, err)
-		return false
-	}
-	defer response.Body.Close()
-	data, err := ioutil.ReadAll(response.Body)
+	updateData, err := httpRequest(d.URL)
 	if err != nil {
 		log.Printf("Check daemon(%s) error: %v", d.Name, err)
 		return false
 	}
 	u := &update{}
-	if err := json.Unmarshal(data, u); err != nil {
+	if err := json.Unmarshal(updateData, u); err != nil {
 		log.Printf("Check daemon(%s) error: %v", d.Name, err)
 		return false
 	}
@@ -98,13 +91,7 @@ func updateDaemon(d *daemon) bool {
 		return false
 	}
 	for _, down := range u.Files {
-		file, err := http.Get(down.URL)
-		if err != nil {
-			log.Printf("Download daemon(%s) error: %v", d.Name, err)
-			return false
-		}
-		defer file.Body.Close()
-		fileData, err := ioutil.ReadAll(file.Body)
+		fileData, err := httpRequest(d.URL)
 		if err != nil {
 			log.Printf("Download daemon(%s) error: %v", d.Name, err)
 			return false
