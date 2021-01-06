@@ -60,29 +60,29 @@ func (con *config) Load() error {
 
 var defaultConfig = &config{}
 
-func updateDaemon(d *daemon) bool {
-	updateData, err := httpRequest(d.URL)
+func updateDaemon(upmon *daemon) bool {
+	updateData, err := httpRequest(upmon.URL)
 	if err != nil {
-		log.Printf("Check daemon(%s) error: %v", d.Name, err)
+		log.Printf("Check daemon(%s) error: %v", upmon.Name, err)
 		return false
 	}
-	u := &update{}
-	if err := json.Unmarshal(updateData, u); err != nil {
-		log.Printf("Check daemon(%s) error: %v", d.Name, err)
+	updateInfo := &update{}
+	if err := json.Unmarshal(updateData, updateInfo); err != nil {
+		log.Printf("Check daemon(%s) error: %v", upmon.Name, err)
 		return false
 	}
-	if d.Version >= u.Version {
-		log.Printf("Check daemon(%s) no need update", d.Name)
+	if upmon.Version >= updateInfo.Version {
+		log.Printf("Check daemon(%s) no need update", upmon.Name)
 		return false
 	}
 
-	dm, err := stdaemon.New(d.Name, d.Desc, stdaemon.SystemDaemon)
+	daemonControl, err := stdaemon.New(upmon.Name, upmon.Desc, stdaemon.SystemDaemon)
 	if err != nil {
-		log.Printf("Control daemon(%s) error: %v", d.Name, err)
+		log.Printf("Control daemon(%s) error: %v", upmon.Name, err)
 		return false
 	}
-	if str, err := dm.Stop(); err != nil {
-		log.Printf("Stop daemon(%s) error(%s): %v", d.Name, str, err)
+	if str, err := daemonControl.Stop(); err != nil {
+		log.Printf("Stop daemon(%s) error(%s): %v", upmon.Name, str, err)
 	}
 	time.Sleep(5 * time.Second)
 	folder, err := osext.ExecutableFolder()
@@ -90,24 +90,24 @@ func updateDaemon(d *daemon) bool {
 		log.Printf("Get executable folder error: %v", err)
 		return false
 	}
-	for _, down := range u.Files {
-		fileData, err := httpRequest(d.URL)
+	for _, updateFile := range updateInfo.Files {
+		fileData, err := httpRequest(updateFile.URL)
 		if err != nil {
-			log.Printf("Download daemon(%s) error: %v", d.Name, err)
+			log.Printf("Download daemon(%s) error: %v", upmon.Name, err)
 			return false
 		}
-		dFilePath := path.Join(folder, down.File)
+		dFilePath := path.Join(folder, updateFile.File)
 		os.MkdirAll(path.Dir(dFilePath), os.ModePerm)
 		if err := ioutil.WriteFile(dFilePath, fileData, 0755); err != nil {
-			log.Printf("Write daemon(%s) error: %v", d.Name, err)
+			log.Printf("Write daemon(%s) error: %v", upmon.Name, err)
 			return false
 		}
 	}
-	if str, err := dm.Start(); err != nil {
-		log.Printf("Start daemon(%s) error(%s): %v", d.Name, str, err)
+	if str, err := daemonControl.Start(); err != nil {
+		log.Printf("Start daemon(%s) error(%s): %v", upmon.Name, str, err)
 	}
-	d.Version = u.Version
-	log.Printf("Update daemon(%s) Successful", d.Name)
+	upmon.Version = updateInfo.Version
+	log.Printf("Update daemon(%s) Successful", upmon.Name)
 	return true
 }
 func keepDaemon(d *daemon) bool {

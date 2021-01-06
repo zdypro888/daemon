@@ -5,7 +5,6 @@ import (
 	"crypto/x509"
 	"errors"
 	"io/ioutil"
-	"net"
 	"net/http"
 	"time"
 
@@ -76,16 +75,8 @@ func httpRequest(url string) ([]byte, error) {
 		return nil, errors.New("can not get root CA")
 	}
 	transport := &http.Transport{
-		Dial: (&net.Dialer{
-			Timeout: 20 * time.Second,
-		}).Dial,
-		ExpectContinueTimeout: 10 * time.Second,
-		ResponseHeaderTimeout: 20 * time.Second,
-		TLSHandshakeTimeout:   30 * time.Second,
 		TLSClientConfig: &tls.Config{
 			InsecureSkipVerify: false,
-			MinVersion:         tls.VersionTLS11,
-			MaxVersion:         tls.VersionTLS13,
 			RootCAs:            roots,
 		},
 	}
