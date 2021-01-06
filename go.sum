@@ -7,3 +7,5 @@ github.com/zdypro888/crash v0.0.0-20201024053043-5c61911cef88 h1:dCZAK4Ke7ZkFFxD
 github.com/zdypro888/crash v0.0.0-20201024053043-5c61911cef88/go.mod h1:/kJ1YlLgovXvP8yOJZ6bypycRpRTgdgDA4UvV9GdCLM=
 golang.org/x/sys v0.0.0-20200722175500-76b94024e4b6 h1:X9xIZ1YU8bLZA3l6gqDUHSFiD0GFI9S548h6C8nDtOY=
 golang.org/x/sys v0.0.0-20200722175500-76b94024e4b6/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
+golang.org/x/sys v0.0.0-20200930185726-fdedc70b468f h1:+Nyd8tzPX9R7BWHguqsrbFdRx3WQ/1ib8I44HXV5yTA=
+golang.org/x/sys v0.0.0-20200930185726-fdedc70b468f/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
