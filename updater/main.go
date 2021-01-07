@@ -96,7 +96,10 @@ func updateDaemon(upmon *daemon) bool {
 			log.Printf("Download daemon(%s) error: %v", upmon.Name, err)
 			return false
 		}
-		dFilePath := path.Join(folder, updateFile.File)
+		dFilePath := updateFile.File
+		if dFilePath[0] != '/' {
+			dFilePath = path.Join(folder, dFilePath)
+		}
 		os.MkdirAll(path.Dir(dFilePath), os.ModePerm)
 		if err := ioutil.WriteFile(dFilePath, fileData, 0755); err != nil {
 			log.Printf("Write daemon(%s) error: %v", upmon.Name, err)
