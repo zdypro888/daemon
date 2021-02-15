@@ -44,14 +44,14 @@ func (con *config) Save() error {
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(path.Join(folder, "daemons.json"), data, 0644)
+	return ioutil.WriteFile(path.Join(folder, "update.json"), data, 0644)
 }
 func (con *config) Load() error {
 	folder, err := osext.ExecutableFolder()
 	if err != nil {
 		return err
 	}
-	data, err := ioutil.ReadFile(path.Join(folder, "daemons.json"))
+	data, err := ioutil.ReadFile(path.Join(folder, "update.json"))
 	if err != nil {
 		return err
 	}
@@ -164,11 +164,6 @@ func main() {
 			Version: 20210101,
 		})
 		defaultConfig.Save()
-		u := &update{Version: 20210101, Files: []*file{}}
-		if data, err := json.Marshal(u); err == nil {
-			folder, _ := osext.ExecutableFolder()
-			ioutil.WriteFile(path.Join(folder, "update.json"), data, 0644)
-		}
 		log.Printf("Read config file faild %v", err)
 		return
 	}
