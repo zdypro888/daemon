@@ -7,15 +7,15 @@ import (
 	"os"
 	"os/signal"
 	"path"
+	"runtime"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/kardianos/osext"
 	"github.com/takama/daemon"
 	"github.com/zdypro888/crash"
 )
-
-var gCrashFile, gLogFile *os.File
 
 //Run 运行
 func Run(name, description string, dependencies ...string) bool {
@@ -85,14 +85,18 @@ func RunWithConsole(name, description string, dependencies ...string) bool {
 			log.Printf("get executable folder faild: %v", err)
 			return false
 		}
-		if gCrashFile, err = crash.InitPanicFile(path.Join(folder, fmt.Sprintf("%s_crash.log", name))); err != nil {
+		if err = crash.InitPanicFile(path.Join(folder, fmt.Sprintf("%s_crash_%v.log", name, time.Now().Format("20060102150405")))); err != nil {
 			log.Printf("open crash file faild: %v", err)
 			return false
 		}
+		var gLogFile *os.File
 		if gLogFile, err = os.OpenFile(path.Join(folder, fmt.Sprintf("%s.log", name)), os.O_CREATE|os.O_WRONLY|os.O_TRUNC|os.O_SYNC, 0644); err != nil {
 			log.Printf("open log file faild: %v", err)
 			return false
 		}
+		runtime.SetFinalizer(gLogFile, func(fd *os.File) {
+			fd.Close()
+		})
 		log.SetOutput(gLogFile)
 	}
 	return true

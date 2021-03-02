@@ -1,12 +1,11 @@
 module github.com/zdypro888/daemon
 
-go 1.15
+go 1.16
 
 require (
 	github.com/kardianos/osext v0.0.0-20190222173326-2bc1f35cddc0
 	github.com/takama/daemon v1.0.0
-	github.com/zdypro888/crash v0.0.0-20201024053043-5c61911cef88
-	github.com/zdypro888/net v1.0.0
-	golang.org/x/net v0.0.0-20201110031124-69a78807bb2b
-	golang.org/x/sys v0.0.0-20200930185726-fdedc70b468f // indirect
+	github.com/zdypro888/crash v0.0.1
+	golang.org/x/net v0.0.0-20210226172049-e18ecbb05110
+	golang.org/x/sys v0.0.0-20210301091718-77cc2087c03b // indirect
 )
