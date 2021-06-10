@@ -106,7 +106,7 @@ func RunWithConsole(name, description string, dependencies ...string) bool {
 func WaitNotify() {
 	interrupt := make(chan os.Signal, 1)
 	defer close(interrupt)
-	signal.Notify(interrupt, os.Interrupt, os.Kill, syscall.SIGTERM)
+	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
 	killSignal := <-interrupt
-	log.Printf("interruped by system signal: %d", killSignal)
+	log.Printf("go system signal: %d", killSignal)
 }
