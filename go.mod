@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/kardianos/osext v0.0.0-20190222173326-2bc1f35cddc0
 	github.com/takama/daemon v1.0.0
-	github.com/zdypro888/crash v1.10.0
+	github.com/zdypro888/crash v1.20.0
 	golang.org/x/net v0.0.0-20220425223048-2871e0cb64e4
 )
 
