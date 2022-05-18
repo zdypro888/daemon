@@ -85,7 +85,7 @@ func RunWithConsole(name, description string, dependencies ...string) bool {
 			log.Printf("get executable folder faild: %v", err)
 			return false
 		}
-		if err = crash.InitPanicFile(path.Join(folder, fmt.Sprintf("%s_crash_%v.log", name, time.Now().Format("20060102150405")))); err != nil {
+		if err = crash.InitPanicFile(path.Join(folder, fmt.Sprintf("%s_crash_%v.log", name, time.Now().Format("20060102")))); err != nil {
 			log.Printf("open crash file faild: %v", err)
 			return false
 		}
