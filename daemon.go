@@ -107,6 +107,6 @@ func WaitNotify() {
 	interrupt := make(chan os.Signal, 1)
 	defer close(interrupt)
 	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
-	killSignal := <-interrupt
-	log.Printf("go system signal: %d", killSignal)
+	signal := <-interrupt
+	log.Printf("go system signal: %d", signal)
 }
