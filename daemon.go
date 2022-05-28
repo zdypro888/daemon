@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/signal"
 	"path"
-	"runtime"
 	"strings"
 	"syscall"
 	"time"
@@ -89,15 +88,10 @@ func RunWithConsole(name, description string, dependencies ...string) bool {
 			log.Printf("open crash file faild: %v", err)
 			return false
 		}
-		var gLogFile *os.File
-		if gLogFile, err = os.OpenFile(path.Join(folder, fmt.Sprintf("%s.log", name)), os.O_CREATE|os.O_WRONLY|os.O_TRUNC|os.O_SYNC, 0644); err != nil {
+		if err = crash.RedirectLog(path.Join(folder, fmt.Sprintf("%s.log", name))); err != nil {
 			log.Printf("open log file faild: %v", err)
 			return false
 		}
-		runtime.SetFinalizer(gLogFile, func(fd *os.File) {
-			fd.Close()
-		})
-		log.SetOutput(gLogFile)
 	}
 	return true
 }
