@@ -3,9 +3,10 @@ package main
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"errors"
 	"io/ioutil"
+	"log"
 	"net/http"
+	"sync"
 	"time"
 
 	"golang.org/x/net/http2"
@@ -65,14 +66,14 @@ VjLPW8nG7F0P+MyLEwrs/0NCoVeNcDmYJ9y/8+HplbtX9NFS0R4dZtU=
 `
 )
 
-func httpRequest(url string) ([]byte, error) {
-	request, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, err
-	}
+var clientOnce sync.Once
+var httpClient *http.Client
+
+func httpGetClient() {
 	roots := x509.NewCertPool()
 	if !roots.AppendCertsFromPEM([]byte(CACertPEM)) {
-		return nil, errors.New("can not get root CA")
+		log.Printf("append cert faild")
+		return
 	}
 	transport := &http.Transport{
 		TLSClientConfig: &tls.Config{
@@ -80,14 +81,23 @@ func httpRequest(url string) ([]byte, error) {
 			RootCAs:            roots,
 		},
 	}
-	if err = http2.ConfigureTransport(transport); err != nil {
-		return nil, err
+	if err := http2.ConfigureTransport(transport); err != nil {
+		log.Printf("http2 configure faild: %v", err)
+		return
 	}
-	client := &http.Client{
+	httpClient = &http.Client{
 		Transport: transport,
 		Timeout:   120 * time.Second,
 	}
-	response, err := client.Do(request)
+}
+
+func httpRequest(url string) ([]byte, error) {
+	request, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	clientOnce.Do(httpGetClient)
+	response, err := httpClient.Do(request)
 	if err != nil {
 		return nil, err
 	}
