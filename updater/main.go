@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/signal"
@@ -44,14 +43,14 @@ func (con *config) Save() error {
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(path.Join(folder, "update.json"), data, 0644)
+	return os.WriteFile(path.Join(folder, "update.json"), data, 0644)
 }
 func (con *config) Load() error {
 	folder, err := osext.ExecutableFolder()
 	if err != nil {
 		return err
 	}
-	data, err := ioutil.ReadFile(path.Join(folder, "update.json"))
+	data, err := os.ReadFile(path.Join(folder, "update.json"))
 	if err != nil {
 		return err
 	}
@@ -101,7 +100,7 @@ func updateDaemon(upmon *daemon) bool {
 			dFilePath = path.Join(folder, dFilePath)
 		}
 		os.MkdirAll(path.Dir(dFilePath), os.ModePerm)
-		if err := ioutil.WriteFile(dFilePath, fileData, 0755); err != nil {
+		if err := os.WriteFile(dFilePath, fileData, 0755); err != nil {
 			log.Printf("Write daemon(%s) error: %v", upmon.Name, err)
 			return false
 		}

@@ -3,7 +3,7 @@ package main
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"sync"
@@ -12,7 +12,7 @@ import (
 	"golang.org/x/net/http2"
 )
 
-//证书
+// 证书
 const (
 	CACertPEM string = `-----BEGIN CERTIFICATE-----
 MIIDtTCCAp2gAwIBAgIITWWCIQf8/VIwDQYJKoZIhvcNAQELBQAwVjELMAkGA1UE
@@ -102,5 +102,5 @@ func httpRequest(url string) ([]byte, error) {
 		return nil, err
 	}
 	defer response.Body.Close()
-	return ioutil.ReadAll(response.Body)
+	return io.ReadAll(response.Body)
 }
