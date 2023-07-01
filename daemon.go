@@ -9,14 +9,13 @@ import (
 	"path"
 	"strings"
 	"syscall"
-	"time"
 
 	"github.com/kardianos/osext"
 	"github.com/takama/daemon"
 	"github.com/zdypro888/crash"
 )
 
-//Run 运行
+// Run 运行
 func Run(name, description string, dependencies ...string) bool {
 	var flagInstall, flagRemove, flagStart, flagStop, flagStatus bool
 	flag.BoolVar(&flagInstall, "install", false, "install services")
@@ -71,7 +70,7 @@ func Run(name, description string, dependencies ...string) bool {
 	return true
 }
 
-//RunWithConsole 运行
+// RunWithConsole 运行
 func RunWithConsole(name, description string, dependencies ...string) bool {
 	var flagConsole bool
 	flag.BoolVar(&flagConsole, "console", false, "with console output")
@@ -84,7 +83,7 @@ func RunWithConsole(name, description string, dependencies ...string) bool {
 			log.Printf("get executable folder faild: %v", err)
 			return false
 		}
-		if err = crash.InitPanicFile(path.Join(folder, fmt.Sprintf("%s_crash_%v.log", name, time.Now().Format("20060102")))); err != nil {
+		if err = crash.InitPanicFile(path.Join(folder, fmt.Sprintf("%s_crash.log", name))); err != nil {
 			log.Printf("open crash file faild: %v", err)
 			return false
 		}
@@ -96,7 +95,7 @@ func RunWithConsole(name, description string, dependencies ...string) bool {
 	return true
 }
 
-//WaitNotify 等待信号量
+// WaitNotify 等待信号量
 func WaitNotify() {
 	interrupt := make(chan os.Signal, 1)
 	defer close(interrupt)
