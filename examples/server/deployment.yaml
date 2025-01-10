@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: server-k8s
+spec:
+  replicas: 3  # 设置3个副本实现负载均衡
+  selector:
+    matchLabels:
+      app: server-k8s
+  template:
+    metadata:
+      labels:
+        app: server-k8s
+    spec:
+      containers:
+      - name: server-k8s
+        image: server-k8s:latest
+        imagePullPolicy: Never  # 强制使用本地镜像
+        ports:
+        - containerPort: 80  # 容器内服务监听80端口

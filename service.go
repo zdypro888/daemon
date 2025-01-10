@@ -18,8 +18,8 @@ type Service struct {
 	takama.Daemon
 }
 
-// New create a new service
-func New(name, description string, dependencies ...string) (*Service, error) {
+// NewService create a new service
+func NewService(name, description string, dependencies ...string) (*Service, error) {
 	td, err := takama.New(name, description, takama.SystemDaemon, dependencies...)
 	if err != nil {
 		return nil, err
@@ -74,8 +74,8 @@ func (service *Service) RedirectLog(filepath string) error {
 	return crash.RedirectLog(filepath)
 }
 
-// WaitNotify wait for a signal to notify the service to stop
-func (service *Service) WaitNotify() os.Signal {
+// Graceful wait for a signal to notify the service to stop
+func (service *Service) Graceful() os.Signal {
 	interrupt := make(chan os.Signal, 1)
 	defer close(interrupt)
 	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)

@@ -1,0 +1,37 @@
+basePath: /api/v1
+definitions:
+  main.PingResponse:
+    properties:
+      message:
+        type: string
+    type: object
+host: localhost
+info:
+  contact:
+    email: info@nb-intelligence.com
+    name: Support
+    url: https://nb-intelligence.com
+  description: This is a sample server for Gin Swagger
+  license:
+    name: Privacy
+    url: https://nb-intelligence.com
+  termsOfService: https://nb-intelligence.com
+  title: Sample Gin Swagger Server
+  version: "1.0"
+paths:
+  /ping:
+    get:
+      consumes:
+      - application/json
+      description: Do ping
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.PingResponse'
+      summary: Ping example
+      tags:
+      - example
+swagger: "2.0"

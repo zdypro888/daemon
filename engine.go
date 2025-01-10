@@ -146,7 +146,7 @@ func (engine *Engine) StartTLS(domain, addr string) error {
 	return nil
 }
 
-func (engine *Engine) GracefulShutdown() {
+func (engine *Engine) Graceful() {
 	if engine.httpsrv == nil {
 		log.Printf("Server not started")
 		return

@@ -1,0 +1,47 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "local",
+            "command": "go",
+            "args": [
+                "build",
+                "-gcflags=-trimpath=${fileDirname}",
+                "-asmflags=-trimpath=${fileDirname}",
+                "-trimpath",
+                "-ldflags",
+                "-w -s"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "options": {
+                "cwd": "${fileDirname}"
+            },
+        },
+        {
+            "label": "linux-64",
+            "command": "go",
+            "args": [
+                "build",
+                "-gcflags=-trimpath=${fileDirname}",
+                "-asmflags=-trimpath=${fileDirname}",
+                "-trimpath",
+                "-ldflags",
+                "-w -s"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "options": {
+                "cwd": "${fileDirname}",
+                "env": {
+                    "GOOS": "linux",
+                    "GOARCH": "amd64"
+                }
+            }
+        }
+    ]
+}
