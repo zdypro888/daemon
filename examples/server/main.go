@@ -1,6 +1,8 @@
 package main
 
 import (
+	"net/http"
+
 	"github.com/zdypro888/daemon"
 	_ "github.com/zdypro888/daemon/examples/server/docs"
 
@@ -39,7 +41,7 @@ type PingResponse struct {
 //	@Success		200	{object}	PingResponse
 //	@Router			/ping [get]
 func PingHandler(c *gin.Context) {
-	c.JSON(200, &PingResponse{Message: "pong"})
+	c.JSON(http.StatusOK, &PingResponse{Message: "pong"})
 }
 
 func main() {
