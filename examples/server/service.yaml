@@ -5,8 +5,8 @@ metadata:
 spec:
   selector:
     app: server-k8s
-  type: LoadBalancer  # 使用 LoadBalancer 类型提供负载均衡
+  type: ClusterIP
   ports:
   - protocol: TCP
-    port: 80          # Service 暴露的端口
-    targetPort: 80     # Pod 的端口（映射到 containerPort）
+    port: 80
+    targetPort: 80
