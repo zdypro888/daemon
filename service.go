@@ -13,6 +13,8 @@ import (
 	takama "github.com/zdypro888/daemon/internal/daemon"
 )
 
+var ErrNoCommand = errors.New("no command specified")
+
 // Service represents a service
 type Service struct {
 	takama.Daemon
@@ -37,7 +39,7 @@ func (service *Service) Usage() {
 // Console parse command line arguments and execute an action
 func (service *Service) Console() error {
 	if len(os.Args) < 2 {
-		return errors.New("no command specified")
+		return ErrNoCommand
 	}
 	command := os.Args[1]
 	var err error
@@ -56,10 +58,10 @@ func (service *Service) Console() error {
 	case "status":
 		var result string
 		if result, err = service.Status(); err == nil {
-			fmt.Println(result)
+			fmt.Print(result)
 		}
 	default:
-		return fmt.Errorf("unknown command: %s", command)
+		err = ErrNoCommand
 	}
 	return err
 }
