@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"runtime"
 	"strings"
 	"syscall"
 
@@ -22,7 +23,14 @@ type Service struct {
 
 // NewService create a new service
 func NewService(name, description string, dependencies ...string) (*Service, error) {
-	td, err := takama.New(name, description, takama.SystemDaemon, dependencies...)
+	var kind takama.Kind
+	switch runtime.GOOS {
+	case "darwin":
+		kind = takama.UserAgent
+	default:
+		kind = takama.SystemDaemon
+	}
+	td, err := takama.New(name, description, kind, dependencies...)
 	if err != nil {
 		return nil, err
 	}

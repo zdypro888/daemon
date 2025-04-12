@@ -13,8 +13,6 @@ import (
 	"time"
 
 	brotli "github.com/anargu/gin-brotli"
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
@@ -22,8 +20,6 @@ import (
 	"github.com/tus/tusd/v2/pkg/filelocker"
 	"github.com/tus/tusd/v2/pkg/filestore"
 	tusd "github.com/tus/tusd/v2/pkg/handler"
-	"github.com/tus/tusd/v2/pkg/memorylocker"
-	"github.com/tus/tusd/v2/pkg/s3store"
 	"golang.org/x/crypto/acme/autocert"
 )
 
@@ -78,7 +74,7 @@ func (engine *Engine) Start(addr string) {
 	}()
 }
 
-func (engine *Engine) StartTLS(domain, addr string) error {
+func (engine *Engine) StartTLS(addr string, hosts ...string) error {
 	folder, err := osext.ExecutableFolder()
 	if err != nil {
 		return err
@@ -95,7 +91,7 @@ func (engine *Engine) StartTLS(domain, addr string) error {
 
 	m := autocert.Manager{
 		Prompt:     autocert.AcceptTOS,
-		HostPolicy: autocert.HostWhitelist(domain),
+		HostPolicy: autocert.HostWhitelist(hosts...),
 		Cache:      autocert.DirCache(certPath),
 	}
 	// http3Server := &http3.Server{Handler: s.Router, Addr: addr, TLSConfig: m.TLSConfig()}
@@ -166,33 +162,6 @@ func (engine *Engine) Graceful() {
 			log.Printf("Server(s) forced to shutdown: %v", err)
 		}
 	}
-}
-
-func (engine *Engine) TUSAWSComposer(bucket, region string) (*tusd.StoreComposer, error) {
-	s3Config, err := config.LoadDefaultConfig(context.Background())
-	if err != nil {
-		return nil, err
-	}
-	s3Client := s3.NewFromConfig(s3Config, func(o *s3.Options) {
-		// o.UseAccelerate = Flags.S3TransferAcceleration
-		// o.EndpointOptions.DisableHTTPS = Flags.S3DisableSSL
-		// if Flags.S3Endpoint != "" {
-		// 	o.BaseEndpoint = &Flags.S3Endpoint
-		// 	o.UsePathStyle = true
-		// }
-	})
-	composer := tusd.NewStoreComposer()
-	store := s3store.New(bucket, s3Client)
-	// store.ObjectPrefix = Flags.S3ObjectPrefix
-	// store.PreferredPartSize = Flags.S3PartSize
-	// store.MinPartSize = Flags.S3MinPartSize
-	// store.MaxBufferedParts = Flags.S3MaxBufferedParts
-	// store.DisableContentHashes = Flags.S3DisableContentHashes
-	// store.SetConcurrentPartUploads(Flags.S3ConcurrentPartUploads)
-	store.UseIn(composer)
-	locker := memorylocker.New()
-	locker.UseIn(composer)
-	return composer, nil
 }
 
 func (engine *Engine) TUSFileComposer(path string) *tusd.StoreComposer {
