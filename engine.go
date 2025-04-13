@@ -13,7 +13,6 @@ import (
 	"syscall"
 	"time"
 
-	brotli "github.com/anargu/gin-brotli"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
@@ -39,6 +38,7 @@ type Engine struct {
 func NewEngine() *Engine {
 	gin.DefaultWriter = os.Stdout      // Gin 的 INFO 级日志输出到 stdout
 	gin.DefaultErrorWriter = os.Stderr // Gin 的 ERROR 级日志输出到 stderr
+	gin.SetMode(gin.ReleaseMode)
 
 	router := gin.Default()
 	router.Use(gin.Logger())
@@ -47,7 +47,7 @@ func NewEngine() *Engine {
 	config.AllowAllOrigins = true
 	router.Use(cors.New(config))
 	router.Use(gzip.Gzip(gzip.DefaultCompression))
-	router.Use(brotli.Brotli(brotli.DefaultCompression))
+	// router.Use(brotli.Brotli(brotli.DefaultCompression))
 
 	return &Engine{
 		Engine:   router,
