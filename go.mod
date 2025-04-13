@@ -5,10 +5,8 @@ go 1.23.0
 toolchain go1.24.1
 
 require (
-	github.com/anargu/gin-brotli v0.0.0-20220116052358-12bf532d5267
 	github.com/gin-contrib/cors v1.7.5
 	github.com/gin-gonic/gin v1.10.0
-	github.com/kardianos/osext v0.0.0-20190222173326-2bc1f35cddc0
 	github.com/swaggo/swag v1.16.4
 	github.com/zdypro888/crash v0.0.0-20240802063351-02f19968b2f6
 	golang.org/x/sys v0.32.0
@@ -28,7 +26,6 @@ require (
 )
 
 require (
-	github.com/andybalholm/brotli v1.1.1 // indirect
 	github.com/bytedance/sonic v1.13.2 // indirect
 	github.com/bytedance/sonic/loader v0.2.4 // indirect
 	github.com/cloudwego/base64x v0.1.5 // indirect
