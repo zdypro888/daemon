@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"path"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
@@ -16,7 +17,6 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
-	"github.com/kardianos/osext"
 	"github.com/tus/tusd/v2/pkg/filelocker"
 	"github.com/tus/tusd/v2/pkg/filestore"
 	tusd "github.com/tus/tusd/v2/pkg/handler"
@@ -75,10 +75,11 @@ func (engine *Engine) Start(addr string) {
 }
 
 func (engine *Engine) StartTLS(addr string, hosts ...string) error {
-	folder, err := osext.ExecutableFolder()
+	ex, err := os.Executable()
 	if err != nil {
 		return err
 	}
+	folder := filepath.Dir(ex)
 	certPath := path.Join(folder, "certs")
 	if _, err := os.Stat(certPath); os.IsNotExist(err) {
 		if err := os.Mkdir(certPath, 0700); err != nil {
@@ -117,29 +118,33 @@ func (engine *Engine) StartTLS(addr string, hosts ...string) error {
 		Handler:           engine.Engine,
 		ReadHeaderTimeout: ReadHeaderTimeout,
 	}
-	go func() {
-		for {
-			if err := engine.httpsrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-				log.Printf("Server error: %v, attempting to restart...", err)
-				time.Sleep(5 * time.Second) // 等待一段时间再尝试重启
-			} else {
-				log.Printf("Server closed")
-				break
-			}
-		}
-	}()
-	go func() {
-		for {
-			if err := engine.httpsrvs.ListenAndServeTLS("", ""); err != nil && err != http.ErrServerClosed {
-				log.Printf("Server(s) error: %v, attempting to restart...", err)
-				time.Sleep(5 * time.Second) // 等待一段时间再尝试重启
-			} else {
-				log.Printf("Server(s) closed")
-				break
-			}
-		}
-	}()
+	go engine.listenGo()
+	go engine.listenTLSGo()
 	return nil
+}
+
+func (engine *Engine) listenGo() {
+	for {
+		if err := engine.httpsrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Printf("Server error: %v, attempting to restart...", err)
+			time.Sleep(5 * time.Second) // 等待一段时间再尝试重启
+		} else {
+			log.Printf("Server closed")
+			break
+		}
+	}
+}
+
+func (engine *Engine) listenTLSGo() {
+	for {
+		if err := engine.httpsrvs.ListenAndServeTLS("", ""); err != nil && err != http.ErrServerClosed {
+			log.Printf("Server(s) error: %v, attempting to restart...", err)
+			time.Sleep(5 * time.Second) // 等待一段时间再尝试重启
+		} else {
+			log.Printf("Server(s) closed")
+			break
+		}
+	}
 }
 
 func (engine *Engine) Graceful() {
