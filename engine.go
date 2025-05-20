@@ -13,7 +13,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
 	"github.com/tus/tusd/v2/pkg/filelocker"
@@ -43,9 +42,6 @@ func NewEngine() *Engine {
 	router := gin.Default()
 	router.Use(gin.Logger())
 	router.Use(gin.Recovery())
-	config := cors.DefaultConfig()
-	config.AllowAllOrigins = true
-	router.Use(cors.New(config))
 	router.Use(gzip.Gzip(gzip.DefaultCompression))
 	// router.Use(brotli.Brotli(brotli.DefaultCompression))
 
