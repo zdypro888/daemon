@@ -2,6 +2,7 @@ package daemon
 
 import (
 	"context"
+	"errors"
 	"log"
 	"net"
 	"net/http"
@@ -23,6 +24,9 @@ import (
 
 const (
 	ReadHeaderTimeout = 3 * time.Second
+	ReadTimeout       = 15 * time.Second
+	WriteTimeout      = 15 * time.Second
+	IdleTimeout       = 60 * time.Second
 )
 
 type Engine struct {
@@ -39,9 +43,8 @@ func NewEngine() *Engine {
 	gin.DefaultErrorWriter = os.Stderr // Gin 的 ERROR 级日志输出到 stderr
 	gin.SetMode(gin.ReleaseMode)
 
+	// gin.Default() already includes Logger() and Recovery() middleware
 	router := gin.Default()
-	router.Use(gin.Logger())
-	router.Use(gin.Recovery())
 	router.Use(gzip.Gzip(gzip.DefaultCompression))
 	// router.Use(brotli.Brotli(brotli.DefaultCompression))
 
@@ -56,7 +59,14 @@ func (engine *Engine) Start(addr string) {
 	if addr == "" {
 		addr = ":http"
 	}
-	engine.httpsrv = &http.Server{Addr: addr, Handler: engine.Engine, ReadHeaderTimeout: ReadHeaderTimeout}
+	engine.httpsrv = &http.Server{
+		Addr:              addr,
+		Handler:           engine.Engine,
+		ReadHeaderTimeout: ReadHeaderTimeout,
+		ReadTimeout:       ReadTimeout,
+		WriteTimeout:      WriteTimeout,
+		IdleTimeout:       IdleTimeout,
+	}
 	go func() {
 		for {
 			if err := engine.httpsrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -71,6 +81,10 @@ func (engine *Engine) Start(addr string) {
 }
 
 func (engine *Engine) StartTLS(addr string, hosts ...string) error {
+	if len(hosts) == 0 {
+		return errors.New("at least one host must be specified for TLS autocert")
+	}
+
 	ex, err := os.Executable()
 	if err != nil {
 		return err
@@ -107,12 +121,18 @@ func (engine *Engine) StartTLS(addr string, hosts ...string) error {
 			http.Redirect(w, req, target, http.StatusMovedPermanently)
 		})),
 		ReadHeaderTimeout: ReadHeaderTimeout,
+		ReadTimeout:       ReadTimeout,
+		WriteTimeout:      WriteTimeout,
+		IdleTimeout:       IdleTimeout,
 	}
 	engine.httpsrvs = &http.Server{
 		Addr:              addr,
 		TLSConfig:         m.TLSConfig(),
 		Handler:           engine.Engine,
 		ReadHeaderTimeout: ReadHeaderTimeout,
+		ReadTimeout:       ReadTimeout,
+		WriteTimeout:      WriteTimeout,
+		IdleTimeout:       IdleTimeout,
 	}
 	go engine.listenGo()
 	go engine.listenTLSGo()
@@ -149,17 +169,21 @@ func (engine *Engine) Graceful() {
 		return
 	}
 	interrupt := make(chan os.Signal, 1)
-	defer close(interrupt)
 	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
+	defer signal.Stop(interrupt)
+	defer close(interrupt)
 	<-interrupt
 
+	// Use separate context for each server to ensure both get full timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if err := engine.httpsrv.Shutdown(ctx); err != nil {
 		log.Printf("Server forced to shutdown: %v", err)
 	}
 	if engine.httpsrvs != nil {
-		if err := engine.httpsrvs.Shutdown(ctx); err != nil {
+		ctx2, cancel2 := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel2()
+		if err := engine.httpsrvs.Shutdown(ctx2); err != nil {
 			log.Printf("Server(s) forced to shutdown: %v", err)
 		}
 	}
@@ -191,7 +215,7 @@ func (engine *Engine) TUSHandle(basePath string, composer *tusd.StoreComposer) e
 		basePathTrimed := strings.TrimSuffix(basePath, "/")
 		engine.Engine.Any(basePathTrimed, gin.WrapH(http.StripPrefix(basePathTrimed, engine.TUSHandler)))
 	}
-	return err
+	return nil
 }
 
 // Static add Cross-Origin-Opener-Policy: same-origin and Cross-Origin-Embedder-Policy: require-corp to all routers

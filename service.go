@@ -87,7 +87,8 @@ func (service *Service) RedirectLog(filepath string) error {
 // Graceful wait for a signal to notify the service to stop
 func (service *Service) Graceful() os.Signal {
 	interrupt := make(chan os.Signal, 1)
-	defer close(interrupt)
 	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
+	defer signal.Stop(interrupt)
+	defer close(interrupt)
 	return <-interrupt
 }

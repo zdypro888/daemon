@@ -53,9 +53,9 @@ func executablePath(name string) (string, error) {
 // Check root rights to use system service
 func checkPrivileges() (bool, error) {
 
-	if output, err := exec.Command("id", "-g").Output(); err == nil {
-		if gid, parseErr := strconv.ParseUint(strings.TrimSpace(string(output)), 10, 32); parseErr == nil {
-			if gid == 0 {
+	if output, err := exec.Command("id", "-u").Output(); err == nil {
+		if uid, parseErr := strconv.ParseUint(strings.TrimSpace(string(output)), 10, 32); parseErr == nil {
+			if uid == 0 {
 				return true, nil
 			}
 			return false, ErrRootPrivileges
