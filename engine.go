@@ -2,6 +2,7 @@ package daemon
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"log"
 	"net"
@@ -67,17 +68,7 @@ func (engine *Engine) Start(addr string) {
 		WriteTimeout:      WriteTimeout,
 		IdleTimeout:       IdleTimeout,
 	}
-	go func() {
-		for {
-			if err := engine.httpsrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-				log.Printf("Server error: %v, attempting to restart...", err)
-				time.Sleep(5 * time.Second) // 等待一段时间再尝试重启
-			} else {
-				log.Printf("Server closed")
-				break
-			}
-		}
-	}()
+	go engine.listenGo()
 }
 
 func (engine *Engine) StartTLS(addr string, hosts ...string) error {
@@ -139,6 +130,24 @@ func (engine *Engine) StartTLS(addr string, hosts ...string) error {
 	return nil
 }
 
+func (engine *Engine) StartTLSWithConfig(addr string, config *tls.Config) error {
+	if addr == "" {
+		addr = ":https"
+	}
+
+	engine.httpsrvs = &http.Server{
+		Addr:              addr,
+		TLSConfig:         config,
+		Handler:           engine.Engine,
+		ReadHeaderTimeout: ReadHeaderTimeout,
+		ReadTimeout:       ReadTimeout,
+		WriteTimeout:      WriteTimeout,
+		IdleTimeout:       IdleTimeout,
+	}
+	go engine.listenTLSGo()
+	return nil
+}
+
 func (engine *Engine) listenGo() {
 	for {
 		if err := engine.httpsrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -164,26 +173,23 @@ func (engine *Engine) listenTLSGo() {
 }
 
 func (engine *Engine) Graceful() {
-	if engine.httpsrv == nil {
-		log.Printf("Server not started")
-		return
-	}
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
 	defer signal.Stop(interrupt)
 	defer close(interrupt)
 	<-interrupt
 
-	// Use separate context for each server to ensure both get full timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	if err := engine.httpsrv.Shutdown(ctx); err != nil {
-		log.Printf("Server forced to shutdown: %v", err)
+	if engine.httpsrv != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := engine.httpsrv.Shutdown(ctx); err != nil {
+			log.Printf("Server forced to shutdown: %v", err)
+		}
 	}
 	if engine.httpsrvs != nil {
-		ctx2, cancel2 := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel2()
-		if err := engine.httpsrvs.Shutdown(ctx2); err != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := engine.httpsrvs.Shutdown(ctx); err != nil {
 			log.Printf("Server(s) forced to shutdown: %v", err)
 		}
 	}
