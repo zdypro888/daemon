@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
+	"io"
 	"log"
 	"net"
 	"net/http"
@@ -39,14 +40,52 @@ type Engine struct {
 	TUSHandler   *tusd.Handler
 }
 
-func NewEngine() *Engine {
-	gin.DefaultWriter = os.Stdout      // Gin 的 INFO 级日志输出到 stdout
-	gin.DefaultErrorWriter = os.Stderr // Gin 的 ERROR 级日志输出到 stderr
-	gin.SetMode(gin.ReleaseMode)
+// EngineOptions controls gin mode and middleware defaults.
+type EngineOptions struct {
+	GinMode      string
+	AccessLog    bool
+	Recovery     bool
+	AccessWriter io.Writer
+	ErrorWriter  io.Writer
+	EnableGzip   bool
+}
 
-	// gin.Default() already includes Logger() and Recovery() middleware
-	router := gin.Default()
-	router.Use(gzip.Gzip(gzip.DefaultCompression))
+func NewEngine() *Engine {
+	return NewEngineWithOptions(EngineOptions{
+		GinMode:    gin.ReleaseMode,
+		AccessLog:  true,
+		Recovery:   true,
+		EnableGzip: true,
+	})
+}
+
+func NewEngineWithOptions(opts EngineOptions) *Engine {
+	if opts.GinMode == "" {
+		opts.GinMode = gin.ReleaseMode
+	}
+	gin.SetMode(opts.GinMode)
+
+	if opts.AccessWriter != nil {
+		gin.DefaultWriter = opts.AccessWriter
+	} else {
+		gin.DefaultWriter = os.Stdout
+	}
+	if opts.ErrorWriter != nil {
+		gin.DefaultErrorWriter = opts.ErrorWriter
+	} else {
+		gin.DefaultErrorWriter = os.Stderr
+	}
+
+	router := gin.New()
+	if opts.AccessLog {
+		router.Use(gin.Logger())
+	}
+	if opts.Recovery {
+		router.Use(gin.Recovery())
+	}
+	if opts.EnableGzip {
+		router.Use(gzip.Gzip(gzip.DefaultCompression))
+	}
 	// router.Use(brotli.Brotli(brotli.DefaultCompression))
 
 	return &Engine{
