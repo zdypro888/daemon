@@ -1,7 +1,15 @@
+// Sample HTTP server using daemon.NewEngine + Swagger annotations.
+//
+// 跑起来:
+//
+//	cd examples/server
+//	swag init    # 生成/更新 Swagger 文档 (需要 swag CLI)
+//	go run .     # http://localhost/swagger/index.html
 package main
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/zdypro888/daemon"
 	_ "github.com/zdypro888/daemon/examples/server/docs"
@@ -45,12 +53,21 @@ func PingHandler(c *gin.Context) {
 }
 
 func main() {
-	engine := daemon.NewEngine()
+	// EngineOptions 演示: 默认 15s 写超时对慢链路 / 大文件下载不友好, 这里调到 5 分钟。
+	engine := daemon.NewEngineWithOptions(daemon.EngineOptions{
+		GinMode:      gin.ReleaseMode,
+		AccessLog:    true,
+		Recovery:     true,
+		EnableGzip:   true,
+		WriteTimeout: 5 * time.Minute,
+	})
+
 	engine.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	api := engine.Group("/api/v1")
 	{
 		api.GET("/ping", PingHandler)
 	}
+
 	engine.Start("")
 	engine.Graceful()
 }
