@@ -122,8 +122,8 @@ github.com/twitchyliquid64/golang-asm v0.15.1/go.mod h1:a1lVb/DtPvCB8fslRZhAngC2
 github.com/ugorji/go/codec v1.3.1 h1:waO7eEiFDwidsBN6agj1vJQ4AG7lh2yqXyOXqhgQuyY=
 github.com/ugorji/go/codec v1.3.1/go.mod h1:pRBVtBSKl77K30Bv8R2P+cLSGaTtex6fsA2Wjqmfxj4=
 github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=
-github.com/zdypro888/crash v0.0.0-20260610032427-e799e30db8a8 h1:zq4ri9DvuJizYh6FNdp6xPNshW04XKf6eKKtTup8QzU=
-github.com/zdypro888/crash v0.0.0-20260610032427-e799e30db8a8/go.mod h1:+1q1aB3bclvYfolInd3eJunWdNcv7X9uTzkYKBrb1fg=
+github.com/zdypro888/crash v0.0.0-20260610033732-2cc99e662a69 h1:e6U4/5V62MwVo3hDBK0ZRr79H33tohC/cQZFFw5Nkv4=
+github.com/zdypro888/crash v0.0.0-20260610033732-2cc99e662a69/go.mod h1:TzPIUA6v10K0YAbX9OjkiYvTZ3yBcS5UMCvUdg/Stac=
 go.mongodb.org/mongo-driver/v2 v2.6.0 h1:b9sJOYrkmt4l8bY43ZenFBcPlhYIjaOfYHLtbB/5qi8=
 go.mongodb.org/mongo-driver/v2 v2.6.0/go.mod h1:yOI9kBsufol30iFsl1slpdq1I0eHPzybRWdyYUs8K/0=
 go.uber.org/mock v0.6.0 h1:hyF9dfmbgIX5EfOdasqLsWD6xqpNZlXblLB/Dbnwv3Y=

@@ -1,6 +1,6 @@
 module github.com/zdypro888/daemon
 
-go 1.25.0
+go 1.26.4
 
 require (
 	github.com/gin-contrib/gzip v1.2.6
@@ -9,7 +9,7 @@ require (
 	github.com/swaggo/gin-swagger v1.6.1
 	github.com/swaggo/swag v1.16.6
 	github.com/tus/tusd/v2 v2.9.2
-	github.com/zdypro888/crash v0.0.0-20260610032427-e799e30db8a8
+	github.com/zdypro888/crash v0.0.0-20260610033732-2cc99e662a69
 	golang.org/x/crypto v0.53.0
 	golang.org/x/sys v0.46.0
 )
