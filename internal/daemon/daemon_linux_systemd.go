@@ -212,8 +212,8 @@ Requires={{.Dependencies}}
 After={{.Dependencies}}
 
 [Service]
-PIDFile=/var/run/{{.Name}}.pid
-ExecStartPre=/bin/rm -f /var/run/{{.Name}}.pid
+PIDFile=/run/{{.Name}}.pid
+ExecStartPre=/bin/rm -f /run/{{.Name}}.pid
 ExecStart={{.Path}} {{.Args}}
 Restart=on-failure
 
