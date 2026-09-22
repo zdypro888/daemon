@@ -1,6 +1,6 @@
 module github.com/zdypro888/daemon
 
-go 1.27.0
+go 1.27.1
 
 require (
 	github.com/gin-contrib/gzip v1.2.6
