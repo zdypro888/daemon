@@ -16,25 +16,30 @@ go get github.com/zdypro888/daemon
 package main
 
 import (
-    "errors"
-    "log"
+ "context"
+ "errors"
+ "log"
+ "os"
+ "os/signal"
+ "syscall"
 
-    "github.com/zdypro888/daemon"
+ "github.com/zdypro888/daemon"
 )
 
 func main() {
-    service, err := daemon.NewService("my-app", "my application")
-    if err != nil {
-        log.Fatal(err)
-    }
-    if err := service.Console(); err != nil {
-        if errors.Is(err, daemon.ErrNoCommand) {
-            service.Usage()
-            return
-        }
-        log.Fatal(err)
-    }
-    service.Graceful()
+ service, err := daemon.NewService("example-service", "sample daemon service")
+ if err != nil { log.Fatal(err) }
+ // 管理子命令完成后退出；无子命令才进入实际工作循环。
+ if err = service.Console(); err == nil { return } else if !errors.Is(err, daemon.ErrNoCommand) { log.Fatal(err) }
+ ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+ defer stop()
+ if err = service.RunContext(ctx, func(ctx context.Context) error {
+  log.Print("service started")
+  <-ctx.Done()
+  // 在这里关闭连接、落盘并归还锁；回调返回后服务才算停止。
+  log.Print("service stopped")
+  return nil
+ }); err != nil { log.Fatal(err) }
 }
 ```
 
@@ -48,7 +53,7 @@ sudo ./my-app stop
 sudo ./my-app remove
 ```
 
-平台具体细节见 `internal/daemon/`。
+`RunContext` 将实际工作交给系统服务回调；前台使用调用者的信号上下文，Windows 服务停止或关机时取消同一上下文并等待回调退出。回调必须响应取消并关闭资源，不能使用 `log.Fatal` 跳过清理。安装/启动等管理子命令成功后应直接退出。平台具体细节见 `internal/daemon/`。
 
 ## 二、Engine 部分 (HTTP/HTTPS 服务器)
 

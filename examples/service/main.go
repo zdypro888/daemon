@@ -1,18 +1,13 @@
-// Sample service that registers itself with the OS service manager and survives restarts.
-//
-// 用法:
-//
-//	go build -o example-service .
-//	sudo ./example-service install --args="arg1 arg2"
-//	sudo ./example-service start
-//	sudo ./example-service status
-//	sudo ./example-service stop
-//	sudo ./example-service remove
+// 示例：同一工作循环支持前台信号与系统服务停止。
 package main
 
 import (
+	"context"
 	"errors"
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/zdypro888/daemon"
 )
@@ -20,26 +15,23 @@ import (
 func main() {
 	service, err := daemon.NewService("example-service", "sample daemon service")
 	if err != nil {
-		log.Fatalf("create service: %v", err)
+		log.Fatal(err)
 	}
-
-	// 把 stderr / log 重定向到文件, 便于服务化跑起来时排错。失败不致命, 继续跑。
-	if err := service.PanicFile("panic.log"); err != nil {
-		log.Printf("init panic file: %v", err)
+	// 管理子命令完成后退出；无子命令才进入实际工作循环。
+	if err = service.Console(); err == nil {
+		return
+	} else if !errors.Is(err, daemon.ErrNoCommand) {
+		log.Fatal(err)
 	}
-	if err := service.RedirectLog("service.log"); err != nil {
-		log.Printf("init log file: %v", err)
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	if err = service.RunContext(ctx, func(ctx context.Context) error {
+		log.Print("service started")
+		<-ctx.Done()
+		// 在这里关闭连接、落盘并归还锁；回调返回后服务才算停止。
+		log.Print("service stopped")
+		return nil
+	}); err != nil {
+		log.Fatal(err)
 	}
-
-	if err := service.Console(); err != nil {
-		// 没传子命令时打印 usage 而不是 panic — 之前 example panic 看着像 bug。
-		if errors.Is(err, daemon.ErrNoCommand) {
-			service.Usage()
-			return
-		}
-		log.Fatalf("service command failed: %v", err)
-	}
-
-	// 阻塞直到收到 SIGINT/SIGTERM
-	service.Graceful()
 }

@@ -275,12 +275,13 @@ type serviceHandler struct {
 }
 
 func (sh *serviceHandler) Execute(args []string, r <-chan svc.ChangeRequest, changes chan<- svc.Status) (ssec bool, errno uint32) {
-	const cmdsAccepted = svc.AcceptStop | svc.AcceptShutdown | svc.AcceptPauseAndContinue
+	// 任务没有暂停协议，不能把空转计时器当作已暂停的工作。
+	const cmdsAccepted = svc.AcceptStop | svc.AcceptShutdown
 	changes <- svc.Status{State: svc.StartPending}
-
-	fasttick := time.Tick(500 * time.Millisecond)
-	slowtick := time.Tick(2 * time.Second)
-	tick := fasttick
+	var done <-chan struct{}
+	if task, ok := sh.executable.(interface{ Done() <-chan struct{} }); ok {
+		done = task.Done()
+	}
 
 	sh.executable.Start()
 	changes <- svc.Status{State: svc.Running, Accepts: cmdsAccepted}
@@ -288,8 +289,13 @@ func (sh *serviceHandler) Execute(args []string, r <-chan svc.ChangeRequest, cha
 loop:
 	for {
 		select {
-		case <-tick:
-			break
+		case <-done:
+			// 上下文任务自行退出时也通知 SCM，不能留下“运行中”的空服务。
+			sh.executable.Stop()
+			if task, ok := sh.executable.(interface{ Err() error }); ok && task.Err() != nil {
+				return true, 1
+			}
+			return false, 0
 		case c := <-r:
 			switch c.Cmd {
 			case svc.Interrogate:
@@ -301,12 +307,6 @@ loop:
 				changes <- svc.Status{State: svc.StopPending}
 				sh.executable.Stop()
 				break loop
-			case svc.Pause:
-				changes <- svc.Status{State: svc.Paused, Accepts: cmdsAccepted}
-				tick = slowtick
-			case svc.Continue:
-				changes <- svc.Status{State: svc.Running, Accepts: cmdsAccepted}
-				tick = fasttick
 			default:
 				continue loop
 			}
@@ -317,11 +317,11 @@ loop:
 
 func (windows *windowsRecord) Run(e Executable) error {
 
-	interactive, err := svc.IsWindowsService()
+	isService, err := svc.IsWindowsService()
 	if err != nil {
 		return getWindowsError(err)
 	}
-	if !interactive {
+	if isService {
 		// service called from windows service manager
 		// use API provided by golang.org/x/sys/windows
 		err = svc.Run(windows.name, &serviceHandler{
